@@ -27,3 +27,28 @@ def create_access_token(sub: str):
 
 def create_refresh_token(sub: str):
     return create_token(sub, "refresh", timedelta(days=settings.refresh_token_expire_days))
+
+
+class InvalidTokenError(Exception):
+    pass
+
+
+def decode_token(token: str, expected_type: str) -> dict: # Валидация токена
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+            options={"require": ["sub", "type", "exp"]},
+        )
+    except jwt.InvalidTokenError as error:
+        raise InvalidTokenError from error
+
+    if payload["type"] != expected_type:
+        raise InvalidTokenError
+
+    return payload
+
+
+def decode_access_token(token: str) -> dict:
+    return decode_token(token, "access")
