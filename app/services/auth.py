@@ -6,7 +6,8 @@ from app.core.security import (
     verify_password,
 )
 from app.repositories.users import get_user_by_login
-from app.schemas.auth import LoginResponse, UserResponse
+from app.schemas.auth import LoginResponse
+from app.schemas.users import UserResponse
 
 
 class InvalidCredentialsError(Exception):

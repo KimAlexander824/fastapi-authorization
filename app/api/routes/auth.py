@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.decorators import login_required
-from app.schemas.auth import LoginRequest, LoginResponse, UserResponse
+from app.api.dependencies import get_current_user
+from app.schemas.auth import LoginRequest, LoginResponse
+from app.schemas.users import UserResponse
 from app.services.auth import InvalidCredentialsError, authenticate_user
 
 router = APIRouter()
@@ -19,6 +20,5 @@ def login(data: LoginRequest) -> LoginResponse:
 
 
 @router.get("/me", response_model=UserResponse)
-@login_required
-def me(current_user: UserResponse) -> UserResponse:
+def me(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
     return current_user
