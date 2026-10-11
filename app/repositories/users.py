@@ -1,14 +1,19 @@
-# Захардкоженная бд вместо настоящей
-# Пароль: 12345
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$p6YVpPzvxw9EvztzRtC71g$4QXsbX+/nfylsVIiIVEPNRrm4CXV+2kbDdcKFx7NaRs"
-    }
-}
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.user import User
 
 
-def get_user_by_login(login: str) -> dict | None:
-    return fake_users_db.get(login)
+class UserRepository:
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def get_by_name(self, name: str) -> User | None:
+        return self.session.scalar(select(User).where(User.name == name))
+
+    def create(self, name: str, hashed_password: str) -> User:
+        user = User(name=name, hashed_password=hashed_password)
+        self.session.add(user)
+        self.session.commit()
+        return user

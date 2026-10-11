@@ -1,16 +1,26 @@
 from datetime import datetime, timedelta, timezone
-from pwdlib import PasswordHash
-from app.core.config import settings
+
 import jwt
+from pwdlib import PasswordHash
 
-password_hash = PasswordHash.recommended()  # создаёт объект с рекомендуемым алгоритмом хеширования паролей (обычно Argon2).
+from app.core.config import settings
+
+password_hash = PasswordHash.recommended()
 
 
-def verify_password(plain_password, hashed_password):
+class InvalidTokenError(Exception):
+    pass
+
+
+def hash_password(plain_password: str) -> str:
+    return password_hash.hash(plain_password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hash.verify(plain_password, hashed_password)
 
 
-def create_token(sub: str, token_type: str, expires_delta: timedelta):
+def _create_token(sub: str, token_type: str, expires_delta: timedelta) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": sub,
@@ -21,19 +31,15 @@ def create_token(sub: str, token_type: str, expires_delta: timedelta):
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
-def create_access_token(sub: str):
-    return create_token(sub, "access", timedelta(minutes=settings.access_token_expire_minutes))
+def create_access_token(sub: str) -> str:
+    return _create_token(sub, "access", timedelta(minutes=settings.access_token_expire_minutes))
 
 
-def create_refresh_token(sub: str):
-    return create_token(sub, "refresh", timedelta(days=settings.refresh_token_expire_days))
+def create_refresh_token(sub: str) -> str:
+    return _create_token(sub, "refresh", timedelta(days=settings.refresh_token_expire_days))
 
 
-class InvalidTokenError(Exception):
-    pass
-
-
-def decode_token(token: str, expected_type: str) -> dict: # Валидация токена
+def decode_token(token: str, expected_type: str) -> dict:
     try:
         payload = jwt.decode(
             token,
