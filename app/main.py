@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from app.api.routes.auth import router as auth_router
-from app.api.routes.protected import router as protected_router
+from app.routers.auth import router as auth_router
+from app.routers.protected import router as protected_router
 
 app = FastAPI()
 

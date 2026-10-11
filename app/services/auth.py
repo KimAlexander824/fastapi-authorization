@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from app.core.security import (
     InvalidTokenError,
     create_access_token,
@@ -5,29 +7,30 @@ from app.core.security import (
     decode_access_token,
     verify_password,
 )
-from app.repositories.users import get_user_by_login
-from app.schemas.auth import LoginResponse, UserResponse
+from app.repositories.users import UserRepository
+from app.schemas.auth import LoginResponse
+from app.schemas.users import UserResponse
 
 
 class InvalidCredentialsError(Exception):
     pass
 
 
-def authenticate_user(login: str, password: str) -> LoginResponse:
-    user = get_user_by_login(login)
-    if user is None or not verify_password(password, user["hashed_password"]):
+def authenticate_user(session: Session, login: str, password: str) -> LoginResponse:
+    user = UserRepository(session).get_by_name(login)
+    if user is None or not verify_password(password, user.hashed_password):
         raise InvalidCredentialsError
 
     return LoginResponse(
-        access_token=create_access_token(login),
-        refresh_token=create_refresh_token(login),
-        user=UserResponse.model_validate(user),  # hashed_password отбрасывается схемой
+        access_token=create_access_token(user.name),
+        refresh_token=create_refresh_token(user.name),
+        user=UserResponse.model_validate(user),
     )
 
 
-def get_user_by_access_token(token: str) -> UserResponse:
+def get_user_by_access_token(session: Session, token: str) -> UserResponse:
     payload = decode_access_token(token)
-    user = get_user_by_login(payload["sub"])
+    user = UserRepository(session).get_by_name(payload["sub"])
     if user is None:
         raise InvalidTokenError
 
